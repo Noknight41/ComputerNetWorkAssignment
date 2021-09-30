@@ -151,6 +151,7 @@ class Client:
 	def listenRtp(self, stop):		
 		"""Listen for RTP packets."""
 		while True:
+			print(f"RTP Thread stop(): {stop()}")
 			if stop():
 				print("Client RTP Thread is safe to terminated")
 				self.rtpSocket.close()
@@ -160,6 +161,10 @@ class Client:
 				continue
 			try: 
 				frame_payload = self.recvRTPPacket()
+			except TimeoutError:
+				print("RTP Socket Timeout")
+				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
+				continue
 			except Exception:
 				print("Finish sending or RTP receive failed")
 				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
@@ -167,8 +172,7 @@ class Client:
 			frame = Image.open(BytesIO(frame_payload))							
 			# print(f"Frame imported from rtp: {frame}")
 			self.currentFrameInstalledIndex += 1
-			self.frame_buffer.append(frame)
-			
+			self.frame_buffer.append(frame)	
 	#TODO
 
 	def recvRTPPacket(self):
@@ -180,7 +184,7 @@ class Client:
 				if bytedata.endswith(JPEG_EOF):
 					break
 			except socket.timeout:
-				pass
+				raise TimeoutError("")
 		data = RtpPacket()
 		data.decode(bytedata)
 		if data.seqNum() == 1:
@@ -208,12 +212,13 @@ class Client:
 	def runMovie(self, stop):
 		"""Update the image file as video frame in the GUI."""
 		while True:
+			sleep(self.DEFAULT_TIME_CLOCK/1000)
+			print(f"Movie Thread stop(): {stop()}")
 			if stop():
-				print("Movie Player thread ready to termintate")
+				print("Movie Player thread is safe to termintate")
 				break
 			if self.state != self.PLAYING:
 				continue
-			sleep(self.DEFAULT_TIME_CLOCK/1000)
 			try:
 				img = self.writeFrame(self.frame_buffer[self.currentFrameDisplayedIndex])
 				self.updateMovie(img)
