@@ -14,7 +14,7 @@ class VideoStream:
 			framelength = int(data)
 							
 			# Read the current frame
-			data = self.file.read(framelength)
+			data = self.file.read(framelength)							
 			self.frameNum += 1
 		return data
 		

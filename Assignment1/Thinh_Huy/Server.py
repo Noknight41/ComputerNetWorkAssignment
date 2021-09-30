@@ -9,7 +9,9 @@ class Server:
 			SERVER_PORT = int(sys.argv[1])
 		except:
 			print("[Usage: Server.py Server_port]\n")
+		SERVER_PORT = 8000
 		rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		rtspSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		rtspSocket.bind(('', SERVER_PORT))
 		rtspSocket.listen(5)        
 
