@@ -1,6 +1,6 @@
 import sys
 from time import time
-HEADER_SIZE = 12
+HEADER_SIZE = 12 #Header size is 12 byte by default
 
 class RtpPacket:	
 	header = bytearray(HEADER_SIZE)
@@ -16,12 +16,24 @@ class RtpPacket:
 		# TO COMPLETE
 		#--------------
 		# Fill the header bytearray with RTP header fields
-		
 		# header[0] = ...
-		# ...
-		
+		header[0] = header[0] | version << 6
+		header[0] = header[0] | padding << 5 	
+		header[0] = header[0] | extension << 4
+		header[0] = header[0] | cc
+		#header[1]
+		header[1] = header[1] | marker << 7
+		header[1] = header[1] | pt
+		#header[2:3] 
+		header[2:3] = seqnum
+		#header[4:7]
+		header[4:7] = timestamp
+		#header[8:11]: choose random number
+		header[8:11] = ssrc
+		#Set header field
+		self.header = header
 		# Get the payload from the argument
-		# self.payload = ...
+		self.payload = payload
 		
 	def decode(self, byteStream):
 		"""Decode the RTP packet."""
