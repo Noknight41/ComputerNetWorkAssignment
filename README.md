@@ -1,11 +1,11 @@
 # ComputerNetWorkAssignment
 
-## PT_HA: \
+## PT_HA: 
 How to run: \
 python Server.py 5540 \
 python ClientLauncher.py localhost 5540 5541 movie.Mjpeg \
 
-## Thinh_Huy: \
+## Thinh_Huy: 
 Server's RTSP Default Port: 8000 \
 RTP Default Port: 25000 \
 Default File Name: movie.Mjpeg \
