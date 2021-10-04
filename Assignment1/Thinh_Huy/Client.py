@@ -238,12 +238,10 @@ class Client:
 	
 	def sendRtspRequest(self, requestCode):
 		"""Send RTSP request to the server."""	
-		#-------------
-		# TO COMPLETE
-		#-------------
 		self.rtspSocket.sendall(requestCode)
 		self.rtspSeq += 1
 		return self.recvRtspReply()
+	#TODO
 	
 	def recvRtspReply(self):
 		"""Receive RTSP reply from the server."""
@@ -259,6 +257,7 @@ class Client:
 		if self.sessionId == 0:
 			self.sessionId = int((response[2].split(' '))[1])
 		return response
+	#TODO
 		
 	def parseRtspReply(self, data):
 		"""Parse the RTSP reply from the server."""
