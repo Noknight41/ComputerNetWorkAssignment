@@ -12,7 +12,7 @@ if __name__ == "__main__":
 	# 	print("[Usage: ClientLauncher.py Server_name Server_port RTP_port Video_file]\n")	
 	
 	root = Tk()
-	serverAddr = ''
+	serverAddr = 'localhost'
 	serverPort = 8000
 	rtpPort = 25000
 	fileName = 'movie.Mjpeg'
