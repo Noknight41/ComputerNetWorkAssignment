@@ -47,7 +47,7 @@ class RtpPacket:
 		self.header[4] = (timestamp >> 24) & 0xFF
 		self.header[5] = (timestamp >> 16) & 0xFF
 		self.header[6] = (timestamp >> 8) & 0xFF
-		self.header[7] = timestamp
+		self.header[7] = timestamp & 0xFF
 
 		self.header[8] = ssrc >> 24
 		self.header[9] = ssrc >> 16
