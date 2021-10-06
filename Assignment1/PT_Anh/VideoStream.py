@@ -3,6 +3,7 @@ class VideoStream:
 		self.filename = filename
 		try:
 			self.file = open(filename, 'rb')
+			print('-'*60 +  "\nVideo file : |" + filename +  "| read\n" + '-'*60)
 		except:
 			raise IOError
 		self.frameNum = 0
@@ -25,7 +26,4 @@ class VideoStream:
 	def frameNbr(self):
 		"""Get frame number."""
 		return self.frameNum
-	
-	# def Reset(self):
-	# 	"""Reset the """
 
