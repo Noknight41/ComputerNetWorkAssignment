@@ -15,7 +15,6 @@ class RtpPacket:
 
 		timestamp = int(time())
 		print ("timestamp: " + str(timestamp))
-		self.header = bytearray(HEADER_SIZE)
 		#--------------
 		# TO COMPLETE
 		#--------------
@@ -27,11 +26,7 @@ class RtpPacket:
 		#Because we have no other contributing sources(field CC == 0),the CSRC-field does not exist
 		#Thus the length of the packet header is therefore 12 bytes
 
-
 			#Above all done in ServerWorker.py
-
-		# ...
-		#header[] =
 
 		#header[0] = version + padding + extension + cc + seqnum + marker + pt + ssrc
 		self.header[0] = version << 6
@@ -54,9 +49,7 @@ class RtpPacket:
 		self.header[10] = ssrc >> 8
 		self.header[11] = ssrc 
 
-
 		# Get the payload from the argument
-		# self.payload = ...
 		self.payload = payload
 
 	def decode(self, byteStream):
