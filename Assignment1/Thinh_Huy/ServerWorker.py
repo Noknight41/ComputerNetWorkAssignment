@@ -9,6 +9,7 @@ class ServerWorker:
 	PLAY = 'PLAY'
 	PAUSE = 'PAUSE'
 	TEARDOWN = 'TEARDOWN'
+	DESCRIBE = 'DESCRIBE'
 	
 	INIT = 0
 	READY = 1
@@ -106,6 +107,14 @@ class ServerWorker:
 			
 			# Close the RTP socket
 			self.clientInfo['rtpSocket'].close()
+
+		# Process Decribe request
+		elif requestType == self.DESCRIBE:
+			print ('-'*60 + "\DESCRIBE Request Received\n" + '-'*60)
+			msg = self.clientInfo['videoStream'].getVideoInfo()
+			reply = 'RTSP/1.0 200 OK\n' + msg
+			connSocket = self.clientInfo['rtspSocket'][0]
+			connSocket.send(reply.encode('utf-8'))
 			
 	def sendRtp(self):
 		"""Send RTP packets over UDP."""
