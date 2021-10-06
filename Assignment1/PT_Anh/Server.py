@@ -13,13 +13,13 @@ class Server:
 		rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		rtspSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		rtspSocket.bind(('', SERVER_PORT))
-		print ("RTSP Listing incoming request...")
+		print("Listening to Client...")
 		rtspSocket.listen(5)
 
 		# Receive client info (address,port) through RTSP/TCP session
 		while True:
 			clientInfo = {}
-			clientInfo['rtspSocket'] = rtspSocket.accept()   # this accept {SockID,tuple object},tuple object = {clinet_addr,intNum}!!!
+			clientInfo['rtspSocket'] = rtspSocket.accept() 
 			ServerWorker(clientInfo).run()
 
 

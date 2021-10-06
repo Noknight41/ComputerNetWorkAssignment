@@ -39,13 +39,13 @@ class ServerWorker:
 		while True:
 			data = connSocket.recv(256)
 			if data:
-				print ('-'*60 + "\nData received:\n" + '-'*60)
-				self.processRtspRequest(data)
+				print("Data received:\n" + data.decode("utf-8"))
+				self.processRtspRequest(data.decode("utf-8"))
 
 	def processRtspRequest(self, data):
 		"""Process RTSP request sent from the client."""
 		# Get the request type
-		request = data.decode('utf8').split('\n')
+		request = data.split('\n')
 		line1 = request[0].split(' ')
 		requestType = line1[0]
 
@@ -73,17 +73,13 @@ class ServerWorker:
 				self.replyRtsp(self.OK_200, seq[1])  
 				# Get the RTP/UDP port from the last line
 				self.clientInfo['rtpPort'] = request[2].split(' ')[3]
-				print ('-'*60 + "\nrtpPort is :" + self.clientInfo['rtpPort'] + "\n" + '-'*60)
-				print ("filename is " + filename)
 
 		# Process PLAY request
 		elif requestType == self.PLAY:
 			if self.state == self.READY:
 				self.state = self.PLAYING
-
 				# Create a new socket for RTP/UDP
 				self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 				self.replyRtsp(self.OK_200, seq[1])
 
 				# Create a new thread and start sending RTP packets
@@ -101,9 +97,7 @@ class ServerWorker:
 		# Process TEARDOWN request
 		elif requestType == self.TEARDOWN:
 			self.clientInfo['event'].set()
-
 			self.replyRtsp(self.OK_200, seq[1])
-
 			# Close the RTP socket
 			self.clientInfo['rtpSocket'].close()
 
@@ -111,7 +105,6 @@ class ServerWorker:
 		"""Send RTP packets over UDP."""
 		while True:
 			self.clientInfo['event'].wait(0.05)
-
 			# Stop sending if request is PAUSE or TEARDOWN
 			if self.clientInfo['event'].isSet():
 				break
@@ -136,7 +129,6 @@ class ServerWorker:
 		pt = 26 # MJPEG type
 		seqnum = frameNbr
 		ssrc = 0
-
 		rtpPacket = RtpPacket()
 		rtpPacket.encode(version, padding, extension, cc, seqnum, marker, pt, ssrc, payload)
 		return rtpPacket.getPacket()

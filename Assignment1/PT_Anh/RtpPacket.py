@@ -15,28 +15,14 @@ class RtpPacket:
 
 		timestamp = int(time())
 		print ("timestamp: " + str(timestamp))
-		#--------------
-		# TO COMPLETE
-		#--------------
 		# Fill the header bytearray with RTP header fields
 
-		#RTP-version filed(V), must set to 2
-		#padding(P),extension(X),number of contributing sources(CC) and marker(M) fields all set to zero in this lab
-
-		#Because we have no other contributing sources(field CC == 0),the CSRC-field does not exist
-		#Thus the length of the packet header is therefore 12 bytes
-
-			#Above all done in ServerWorker.py
-
 		#header[0] = version + padding + extension + cc + seqnum + marker + pt + ssrc
-		self.header[0] = version << 6
-		self.header[0] = self.header[0] | padding << 5
-		self.header[0] = self.header[0] | extension << 4
-		self.header[0] = self.header[0] | cc
+		self.header[0] = (version << 6) | (padding << 5) | (extension << 4) | cc
 		self.header[1] = marker << 7
 		self.header[1] = self.header[1] | pt
 
-		self.header[2] = seqnum >> 8
+		self.header[2] = (seqnum >> 8) & 0xFF
 		self.header[3] = seqnum & 0xFF # Prevent Overflow in byte()
 
 		self.header[4] = (timestamp >> 24) & 0xFF
@@ -44,7 +30,7 @@ class RtpPacket:
 		self.header[6] = (timestamp >> 8) & 0xFF
 		self.header[7] = timestamp & 0xFF
 
-		self.header[8] = ssrc >> 24
+		self.header[8] = (ssrc >> 24) & 0xFF 
 		self.header[9] = ssrc >> 16
 		self.header[10] = ssrc >> 8
 		self.header[11] = ssrc 
