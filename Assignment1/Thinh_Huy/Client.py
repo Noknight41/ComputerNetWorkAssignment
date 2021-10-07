@@ -33,6 +33,8 @@ class Client:
 	PAUSE = 2
 	TEARDOWN = 3
 	DESCRIBE = 4
+	FORWARD5SECONDS = 5
+	BACKWARD5SECONDS = 6
 
 	DEFAULT_TIME_CLOCK = 50 # 50ms
 	
@@ -64,7 +66,13 @@ class Client:
 		self.connectToServer()
 
 		self.videoPlayerThread = None
-		
+		#Attribute for video information:
+		self.videoTotalFrame = None
+		self.videoEncode = None
+		self.videoDuration = None
+		self.videoFps = None
+		self.videoFrameSize = None
+
 	# THIS GUI IS JUST FOR REFERENCE ONLY, STUDENTS HAVE TO CREATE THEIR OWN GUI 	
 	def createWidgets(self):
 		"""Build GUI."""
@@ -93,10 +101,22 @@ class Client:
 		self.teardown.grid(row=1, column=3, padx=2, pady=2)
 
 		# Create Describe button
-		self.teardown = Button(self.master, width=20, padx=3, pady=3)
-		self.teardown["text"] = "Describe"
-		self.teardown["command"] =  self.describeMovie
-		self.teardown.grid(row=1, column=4, padx=2, pady=2)
+		self.describe = Button(self.master, width=20, padx=3, pady=3)
+		self.describe["text"] = "Describe"
+		self.describe["command"] =  self.describeMovie
+		self.describe.grid(row=1, column=4, padx=2, pady=2)
+
+		# Create Forward 5s button
+		self.forward = Button(self.master, width=20, padx=3, pady=3)
+		self.forward["text"] = "Forward 5s"
+		self.forward["command"] =  self.forward5seconds
+		self.forward.grid(row=1, column=5, padx=2, pady=2)
+
+		# Create Forward 5s button
+		self.backward = Button(self.master, width=20, padx=3, pady=3)
+		self.backward["text"] = "Backward 5s"
+		self.backward["command"] =  self.backward5seconds
+		self.backward.grid(row=1, column=6, padx=2, pady=2)
 		
 		# Create a label to display the movie
 		self.label = Label(self.master, height=19)
@@ -105,11 +125,20 @@ class Client:
 	def setupMovie(self):
 		"""Setup button handler. Starting RTP receiving thread"""
 		self.openRtpPort()
+		#Set up movie:
 		request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.state = self.READY
 		return response
 	#TODO
+
+	def forward5seconds(self):
+		request = RtspPacket(self.FORWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
+		response = self.sendRtspRequest(request)
+
+	def backward5seconds(self):
+		request = RtspPacket(self.BACKWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
+		response = self.sendRtspRequest(request)
 	
 	def exitClient(self):
 		"""Teardown button handler."""
@@ -139,11 +168,18 @@ class Client:
 	#TODO
 
 	def describeMovie(self):
+		#TODO: Show response to UI, you may extract valuable information
+		#Get Movie information:
 		request = RtspPacket(self.DESCRIBE, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
-		response = response[1]
-		#TODO: Show response to UI, you may extract valuable information
-		print("stream information: \n" + response)
+		self.videoFrameSize = response[1]
+		self.videoDuration = float(response[2])
+		self.videoTotalFrame = float(response[4])
+		self.videoEncode = response[3]
+		self.videoFps = float(response[5])
+		print("Time remaining")
+		print(self.getVideoRemainTime())
+		
 	
 	def playMovie(self):
 		"""Play button handler. Trigger server RTP socket sending frame"""
@@ -300,3 +336,8 @@ class Client:
 		self.master.destroy()
 		sys.exit()
 	#TODO
+
+	def getVideoRemainTime(self):
+		#TODO: Show remain time into UI:
+		return (self.videoTotalFrame - self.currentFrameDisplayedIndex) * self.videoDuration / self.videoTotalFrame
+		

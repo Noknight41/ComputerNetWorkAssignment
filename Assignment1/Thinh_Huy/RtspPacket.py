@@ -3,6 +3,8 @@ PLAY = 1
 PAUSE = 2
 TEARDOWN = 3
 DESCRIBE = 4
+FORWARD5SECONDS = 5
+BACKWARD5SECONDS = 6
 
 class RtspPacket:
 
@@ -55,6 +57,24 @@ class RtspPacket:
         if self.request_type == DESCRIBE:
             request_line = [
                 f"DESCRIBE {self.video_file_path} {self.rtsp_version}",
+                f"CSeq: {self.sequence_number}",
+                f"Session: {self.session_id}"
+            ]
+            request = '\n'.join(request_line) + '\n'
+            return request.encode()
+
+        if self.request_type == FORWARD5SECONDS:
+            request_line = [
+                f"FORWARD5SECONDS {self.video_file_path} {self.rtsp_version}",
+                f"CSeq: {self.sequence_number}",
+                f"Session: {self.session_id}"
+            ]
+            request = '\n'.join(request_line) + '\n'
+            return request.encode()
+
+        if self.request_type == BACKWARD5SECONDS:
+            request_line = [
+                f"BACKWARD5SECONDS {self.video_file_path} {self.rtsp_version}",
                 f"CSeq: {self.sequence_number}",
                 f"Session: {self.session_id}"
             ]

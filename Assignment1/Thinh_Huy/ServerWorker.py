@@ -4,12 +4,17 @@ import sys, traceback, threading, socket
 from VideoStream import VideoStream
 from RtpPacket import RtpPacket
 
+BACKWARD = 0
+FORWARD = 1
+
 class ServerWorker:
 	SETUP = 'SETUP'
 	PLAY = 'PLAY'
 	PAUSE = 'PAUSE'
 	TEARDOWN = 'TEARDOWN'
 	DESCRIBE = 'DESCRIBE'
+	FORWARD5SECONDS = 'FORWARD5SECONDS'
+	BACKWARD5SECONDS = 'BACKWARD5SECONDS'
 	
 	INIT = 0
 	READY = 1
@@ -115,6 +120,18 @@ class ServerWorker:
 			reply = 'RTSP/1.0 200 OK\n' + msg
 			connSocket = self.clientInfo['rtspSocket'][0]
 			connSocket.send(reply.encode('utf-8'))
+
+		elif requestType == self.FORWARD5SECONDS:
+			print ('-'*60 + "\FORWARD5SECONDS Request Received\n" + '-'*60)
+			#TODO: Change frame  + 5 seconds
+			self.clientInfo['videoStream'].setFrame(seconds=5, type=FORWARD)
+			self.replyRtsp(self.OK_200, seq[1])
+
+		elif requestType == self.BACKWARD5SECONDS:
+			print ('-'*60 + "\BACKWARD5SECONDS Request Received\n" + '-'*60)
+			#TODO: Change frame  + 5 seconds
+			self.clientInfo['videoStream'].setFrame(seconds=5, type=BACKWARD)
+			self.replyRtsp(self.OK_200, seq[1])
 			
 	def sendRtp(self):
 		"""Send RTP packets over UDP."""
@@ -122,9 +139,9 @@ class ServerWorker:
 			self.clientInfo['event'].wait(self.DEFAULT_TIME_CLOCK/1000) 
 			
 			# Stop sending if request is PAUSE or TEARDOWN
+			print("Thread is running")
 			if self.clientInfo['event'].isSet(): 
 				break 
-			
 			data = self.clientInfo['videoStream'].nextFrame()
 			if data: 
 				frameNumber = self.clientInfo['videoStream'].frameNbr()
@@ -141,9 +158,6 @@ class ServerWorker:
 						rtp_packet = rtp_packet[self.DEFAULT_CHUNK_SIZE:]
 				except:
 					print("Connection Error")
-					#print('-'*60)
-					#traceback.print_exc(file=sys.stdout)
-					#print('-'*60)
 
 	def makeRtp(self, payload, frameNbr):
 		"""RTP-packetize the video data."""
