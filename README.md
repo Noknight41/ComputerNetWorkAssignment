@@ -6,8 +6,8 @@ python Server.py 5540 \
 python ClientLauncher.py localhost 5540 5541 movie.Mjpeg \
 
 ## Thinh_Huy: 
-**Notice**: require opencv
-Install opencv: pip install opencv-contrib-python
+**Notice**: require opencv \
+Install opencv: pip install opencv-contrib-python \
 Server's RTSP Default Port: 8000 \
 RTP Default Port: 25000 \
 Default File Name: movie.Mjpeg \
