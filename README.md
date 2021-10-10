@@ -8,33 +8,22 @@ python ClientLauncher.py localhost 5540 5541 movie.Mjpeg \
 ## Thinh_Huy: 
 **Notice**: require opencv \
 Install opencv: pip install opencv-contrib-python \
-Server's RTSP Default Port: 8000 \
-RTP Default Port: 25000 \
 Default File Name: movie.Mjpeg \
 Prepared Command Line:
 ```
-  sudo kill -9 $(lsof -t -i:8000) | sudo kill -9 $(lsof -t -i:25000)
+  sudo kill -9 $(lsof -t -i:<server port>) | sudo kill -9 $(lsof -t -i:<rtp port>)
 ```
 
 Running Application:
 ```
- python Server.py
+ python Server.py <server port>
 ```
 Server Main Thread is an RTSP socket listening for request
 ```
- python ClientLauncher.py
+ python ClientLauncher.py <host address> <server port> <rtp port> <filename>
 ```
-Client Main Thread are TK() objects handling UI buttons interleaved with RTSP socket sending message
+Switch event:\
+Choosing old file brings client back to READY state\
+Choosing new file triggers TEARDOWN event to close rtp,videoplayer threads. Reclick setup button for new connection with new filename
+Note: Currently not applicable for mjpeg from internet
 
-Setup event:\
-Client's RTSP Socket create connection with Server's RTSP Socket
-
-Play event:\
-Client opens RTP/UDP socket thread and writing image to TK's label thread, Server opens RTP/UDP socket thread sending each frame
-
-Pause event:\
-Server stop sending frame, Client not recognize any new frame sent will hang the display thread
-
-Teardown:\
-Server close RTP socket
-Client calls exit() for thread RTP and thread Display, closes TK
