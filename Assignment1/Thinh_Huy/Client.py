@@ -6,7 +6,7 @@ import socket, threading, sys, traceback, os
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from RtpPacket import RtpPacket
 from VideoStream import VideoStream
-from RtspPacket import TEARDOWN, RtspPacket
+from RtspPacket import PAUSE, TEARDOWN, RtspPacket
 from io import BytesIO
 
 CACHE_FILE_NAME = "cache-"
@@ -26,7 +26,7 @@ class Client:
 	INIT = 0
 	READY = 1
 	PLAYING = 2
-	state = INIT
+	# SWITCH = 7
 	
 	SETUP = 0
 	PLAY = 1
@@ -35,13 +35,15 @@ class Client:
 	DESCRIBE = 4
 	FORWARD5SECONDS = 5
 	BACKWARD5SECONDS = 6
+	SWITCH = 7
 
+	state = INIT
 	DEFAULT_TIME_CLOCK = 50 # 50ms
 	
 	# Initiation..
 	def __init__(self, master, serveraddr, serverport, rtpport, filename):
 		self.master = master	# screen
-		self.master.protocol("WM_DELETE_WINDOW", self.handler)
+		self.master.protocol("WM_DELETE_WINDOW", self.handler) # Click 'x' button automatically call self.handler()
 		self.createWidgets()
 		self.serverAddr = serveraddr
 		self.serverPort = int(serverport)
@@ -117,32 +119,76 @@ class Client:
 		self.backward["text"] = "Backward 5s"
 		self.backward["command"] =  self.backward5seconds
 		self.backward.grid(row=1, column=6, padx=2, pady=2)
+
+		# Create Switch button
+		self.backward = Button(self.master, width=20, padx=3, pady=3)
+		self.backward["text"] = "Switch"
+		self.backward["command"] =  self.switchMovie
+		self.backward.grid(row=1, column=7, padx=2, pady=2)
 		
 		# Create a label to display the movie
 		self.label = Label(self.master, height=19)
 		self.label.grid(row=0, column=0, columnspan=4, sticky=W+E+N+S, padx=5, pady=5) 
 	
-	def setupMovie(self, filename=None):
+	def setupMovie(self):
 		"""Setup button handler. Starting RTP receiving thread"""
 		self.isRtpThreadStopped = False
 		self.isVideoThreadStopped = False
 		self.openRtpPort()
 		#Set up movie:
-		if filename: 
-			request = RtspPacket(self.SETUP, filename, self.rtspSeq, self.rtpPort).generate()
-		else:
-			request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
+		request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.state = self.READY
 		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
 		return response
 	#TODO
 
+	def switchMovie(self):
+		if self.state != self.READY:
+			self.pauseMovie()
+		self.state = self.SWITCH
+		request = RtspPacket(self.SWITCH, self.fileName, self.rtspSeq, self.rtpPort).generate()
+		# To be implemented: server reponse with dictionary containing array of string for each filename 
+		response = self.sendRtspRequest(request)
+		# Remove empty '' string
+		filenameList = list(filter(lambda var : (var != '') ,response[3].split(' ')))
+		print("File Name List: ",filenameList)
+		# To be implemented: setting up new Tk() open choose menu
+		self.chooseFilenameMenuApp(filenameList)
+
+		if self.newFilename == self.fileName:
+			# The same movie -> back to normal PAUSE state
+			self.state = self.READY
+		else:
+			# New movie -> TEARDOWN old rtp connection, SETUP new connection with the new filename
+			self.fileName = self.newFilename
+			self.exitClient()
+		# ...
+		pass
+
+	
+	def chooseFilenameMenuApp(self, filenameList):
+		top = Toplevel(self.master)
+		# top.protocol("WM_DELETE_WINDOW", top.destroy)
+		top.title("Choose filename")
+		newFilenameRadioValue = StringVar()
+		for filename in filenameList:
+			Radiobutton(top, text=filename, value=filename, variable=newFilenameRadioValue, command=newFilenameRadioValue.get()).pack(anchor=W)
+		saveButton = Button(top, text="Click to choose this filename", command=lambda: self.saveNewFilenameAndDestroy(newFilenameRadioValue.get(),top))
+		saveButton.pack()
+		top.wait_window()
+		#After destroy mainloop of child TK() objects
+
+
+	def saveNewFilenameAndDestroy(self, value, top):
+		self.newFilename = value
+		top.destroy()
+
+
 	def forward5seconds(self):
 		request = RtspPacket(self.FORWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
-
 
 	def backward5seconds(self):
 		request = RtspPacket(self.BACKWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
@@ -164,6 +210,7 @@ class Client:
 		self.rtpThread.join()
 		self.videoPlayerThread = None
 		self.rtpThread = None
+		self.state = self.INIT
 		# self.handler()
 	#TODO																	 
 
@@ -210,7 +257,7 @@ class Client:
 	def listenRtp(self, stop):		
 		"""Listen for RTP packets."""
 		while True:
-			print(f"Is RTP Thread stop(): {stop()}")
+			# print(f"Is RTP Thread stop(): {stop()}")
 			if stop():
 				print("Client RTP Thread is safe to terminated")
 				self.isReceivingRtp = False
@@ -248,7 +295,8 @@ class Client:
 		data = RtpPacket()
 		data.decode(bytedata)
 		if data.seqNum() == 1: # Print first frame of each Mjpeg file (for debugging purpose)
-			print(data.getPayload())
+			# print(data.getPayload())
+			pass
 		print(f"Receive frame number: {data.seqNum()}")
 		return data.getPayload()
 
@@ -257,14 +305,15 @@ class Client:
 		"""Write the received frame to a temp image file. Return the image file."""
 		b = BytesIO()
 		data.save(b, format="jpeg")
-		print(data)
+		# print(data)
 		return data
 	#TODO
 
 	def updateMovie(self, imageFile):
 		"""Update the image file as video frame in the GUI."""
 		imgTk = ImageTk.PhotoImage(imageFile)
-		self.label.config(image=imgTk, width=384, height=288)
+		print(imgTk)
+		self.label.config(image=imgTk, width=imgTk.width(), height=imgTk.height())
 		self.label.image=imgTk
 		# print(self.label.image)
 	#TODO
@@ -345,6 +394,10 @@ class Client:
 	def handler(self):
 		"""Handler on explicitly closing the GUI window."""
 		print("Close UI")
+		# Potentail bugs for closing, join closed socket or joined thread
+		if self.state != self.INIT:
+			self.exitClient()
+		
 		self.rtspSocket.close()
 		self.master.destroy()
 		sys.exit()

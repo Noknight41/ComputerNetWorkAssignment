@@ -1,6 +1,6 @@
 from random import randint
 import sys, traceback, threading, socket
-
+import os
 from VideoStream import VideoStream
 from RtpPacket import RtpPacket
 
@@ -15,6 +15,7 @@ class ServerWorker:
 	DESCRIBE = 'DESCRIBE'
 	FORWARD5SECONDS = 'FORWARD5SECONDS'
 	BACKWARD5SECONDS = 'BACKWARD5SECONDS'
+	SWITCH = 'SWITCH'
 	
 	INIT = 0
 	READY = 1
@@ -114,7 +115,7 @@ class ServerWorker:
 			# Close the RTP socket
 			self.clientInfo['rtpSocket'].close()
 
-		# Process Decribe request
+		# Process DESCRIBE request
 		elif requestType == self.DESCRIBE:
 			print ('-'*60 + "\DESCRIBE Request Received\n" + '-'*60)
 			msg = self.clientInfo['videoStream'].getVideoInfo()
@@ -122,25 +123,35 @@ class ServerWorker:
 			connSocket = self.clientInfo['rtspSocket'][0]
 			connSocket.send(reply.encode('utf-8'))
 
+		# Process FORWARD5SECONDS request
 		elif requestType == self.FORWARD5SECONDS:
 			print ('-'*60 + "\FORWARD5SECONDS Request Received\n" + '-'*60)
 			#TODO: Change frame  + 5 seconds
 			self.clientInfo['videoStream'].setFrame(seconds=5, type=FORWARD)
 			self.replyRtsp(self.OK_200, seq[1])
 
+		# Process BACKWARD5SECONDS request
 		elif requestType == self.BACKWARD5SECONDS:
 			print ('-'*60 + "\BACKWARD5SECONDS Request Received\n" + '-'*60)
 			#TODO: Change frame  + 5 seconds
 			self.clientInfo['videoStream'].setFrame(seconds=5, type=BACKWARD)
 			self.replyRtsp(self.OK_200, seq[1])
-			
+
+		# Process SWITCH request
+		elif requestType == self.SWITCH:
+			print("processing SWITCH\n")
+			filenameList = self.queryFilename()
+			connSocket = self.clientInfo['rtspSocket'][0]
+			self.replyRtsp(self.OK_200, seq[1], filenameList)
+		
+
 	def sendRtp(self):
 		"""Send RTP packets over UDP."""
 		while True:
 			self.clientInfo['event'].wait(self.DEFAULT_TIME_CLOCK/1000) 
-			
+
 			# Stop sending if request is PAUSE or TEARDOWN
-			# print("Thread is running")
+			# print("Thread is running")				 
 			if self.clientInfo['event'].isSet(): 
 				break 
 			data = self.clientInfo['videoStream'].nextFrame()
@@ -161,6 +172,7 @@ class ServerWorker:
 				except:
 					print("Connection Error")
 
+
 	def makeRtp(self, payload, frameNbr):
 		"""RTP-packetize the video data."""
 		version = 2
@@ -174,12 +186,15 @@ class ServerWorker:
 		rtpPacket = RtpPacket()
 		rtpPacket.encode(version, padding, extension, cc, seqnum, marker, pt, ssrc, payload)
 		return rtpPacket.getPacket()
-		
-	def replyRtsp(self, code, seq):
+
+
+	def replyRtsp(self, code, seq, msg=None):
 		"""Send RTSP reply to the client."""
 		if code == self.OK_200:
 			#print("200 OK")
 			reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session'])
+			if msg:
+				reply += '\n' + msg
 			connSocket = self.clientInfo['rtspSocket'][0]
 			connSocket.send(reply.encode())
 		# Error messages
@@ -187,3 +202,11 @@ class ServerWorker:
 			print("404 NOT FOUND")
 		elif code == self.CON_ERR_500:
 			print("500 CONNECTION ERROR")
+
+
+	def queryFilename(self):
+		filenameList = ""
+		for filename in os.listdir():
+			if filename.endswith("Mjpeg"):
+				filenameList += filename + ' '
+		return filenameList
