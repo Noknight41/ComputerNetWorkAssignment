@@ -122,11 +122,16 @@ class Client:
 		self.label = Label(self.master, height=19)
 		self.label.grid(row=0, column=0, columnspan=4, sticky=W+E+N+S, padx=5, pady=5) 
 	
-	def setupMovie(self):
+	def setupMovie(self, filename=None):
 		"""Setup button handler. Starting RTP receiving thread"""
+		self.isRtpThreadStopped = False
+		self.isVideoThreadStopped = False
 		self.openRtpPort()
 		#Set up movie:
-		request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
+		if filename: 
+			request = RtspPacket(self.SETUP, filename, self.rtspSeq, self.rtpPort).generate()
+		else:
+			request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.state = self.READY
 		return response
@@ -153,8 +158,9 @@ class Client:
 		self.isVideoThreadStopped = True
 		self.videoPlayerThread.join()
 		self.rtpThread.join()
-		self.rtspSocket.close()
-		self.handler()
+		self.videoPlayerThread = None
+		self.rtpThread = None
+		# self.handler()
 	#TODO																	 
 
 	def pauseMovie(self):
@@ -203,6 +209,7 @@ class Client:
 			print(f"RTP Thread stop(): {stop()}")
 			if stop():
 				print("Client RTP Thread is safe to terminated")
+				self.isReceivingRtp = False
 				self.rtpSocket.close()
 				break
 			if not self.isReceivingRtp:
@@ -255,14 +262,14 @@ class Client:
 		imgTk = ImageTk.PhotoImage(imageFile)
 		self.label.config(image=imgTk, width=384, height=288)
 		self.label.image=imgTk
-		print(self.label.image)
+		# print(self.label.image)
 	#TODO
 	
 	def runMovie(self, stop):
 		"""Update the image file as video frame in the GUI."""
 		while True:
 			sleep(self.DEFAULT_TIME_CLOCK/1000)
-			print(f"Movie Thread stop(): {stop()}")
+			# print(f"Movie Thread stop(): {stop()}")
 			if stop():
 				print("Movie Player thread is safe to termintate")
 				break
@@ -287,6 +294,7 @@ class Client:
 	
 	def sendRtspRequest(self, requestCode):
 		"""Send RTSP request to the server."""	
+		print(requestCode)
 		self.rtspSocket.sendall(requestCode)
 		self.rtspSeq += 1
 		return self.recvRtspReply()
@@ -333,6 +341,7 @@ class Client:
 	def handler(self):
 		"""Handler on explicitly closing the GUI window."""
 		print("Close UI")
+		self.rtspSocket.close()
 		self.master.destroy()
 		sys.exit()
 	#TODO
