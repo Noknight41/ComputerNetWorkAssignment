@@ -22,8 +22,8 @@ Server Main Thread is an RTSP socket listening for request
 ```
  python ClientLauncher.py <host address> <server port> <rtp port> <filename>
 ```
-Switch event:\
+**Switch**\
 Choosing old file brings client back to READY state\
 Choosing new file triggers TEARDOWN event to close rtp,videoplayer threads. Reclick setup button for new connection with new filename
-Note: Currently not applicable for mjpeg from internet
+**Note**: Currently not applicable for mjpeg from internet
 
