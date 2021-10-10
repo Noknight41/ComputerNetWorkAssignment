@@ -134,16 +134,20 @@ class Client:
 			request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.state = self.READY
+		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
 		return response
 	#TODO
 
 	def forward5seconds(self):
 		request = RtspPacket(self.FORWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
+		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
+
 
 	def backward5seconds(self):
 		request = RtspPacket(self.BACKWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
+		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
 	
 	def exitClient(self):
 		"""Teardown button handler."""
@@ -206,7 +210,7 @@ class Client:
 	def listenRtp(self, stop):		
 		"""Listen for RTP packets."""
 		while True:
-			print(f"RTP Thread stop(): {stop()}")
+			print(f"Is RTP Thread stop(): {stop()}")
 			if stop():
 				print("Client RTP Thread is safe to terminated")
 				self.isReceivingRtp = False
@@ -243,7 +247,7 @@ class Client:
 				raise TimeoutError("")
 		data = RtpPacket()
 		data.decode(bytedata)
-		if data.seqNum() == 1:
+		if data.seqNum() == 1: # Print first frame of each Mjpeg file (for debugging purpose)
 			print(data.getPayload())
 		print(f"Receive frame number: {data.seqNum()}")
 		return data.getPayload()

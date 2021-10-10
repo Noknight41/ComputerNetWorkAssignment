@@ -140,14 +140,15 @@ class ServerWorker:
 			self.clientInfo['event'].wait(self.DEFAULT_TIME_CLOCK/1000) 
 			
 			# Stop sending if request is PAUSE or TEARDOWN
-			print("Thread is running")
+			# print("Thread is running")
 			if self.clientInfo['event'].isSet(): 
 				break 
 			data = self.clientInfo['videoStream'].nextFrame()
 			if data: 
 				frameNumber = self.clientInfo['videoStream'].frameNbr()
-				if frameNumber == 1:
-					print(data)
+				if frameNumber == 1: # Print first frame data (for debugging purpose)
+					# print(data)
+					pass
 				try:
 					address = self.clientInfo['rtspSocket'][1][0]
 					port = int(self.clientInfo['rtpPort'])
