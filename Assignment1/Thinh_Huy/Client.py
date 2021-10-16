@@ -1,5 +1,6 @@
 from time import sleep
 from tkinter import *
+from time import time
 import tkinter.messagebox
 from PIL import Image, ImageTk,ImageFile
 import socket, threading, sys, traceback, os
@@ -52,7 +53,8 @@ class Client:
 		self.rtspSeq = 0
 		self.sessionId = 0
 		self.requestSent = -1																		
-		self.teardownAcked = 0																						
+		self.teardownAcked = 0
+		self.TotalFrame = 0																						
 		self.frameNbr = 0
 		self.frameCurrent = 0
 		self.frameLoss = 0
@@ -65,8 +67,11 @@ class Client:
 		self.rtpThread = None
 		self.isReceivingRtp = False
 		self.frame_buffer = []
+		self.videoDataRate = []
 		self.currentFrameInstalledIndex = -1
 		self.currentFrameDisplayedIndex = 0
+		self.timeStampPrev = 0
+		self.timeStampCur = 0
 		self.connectToServer()
 
 		self.videoPlayerThread = None
@@ -142,8 +147,19 @@ class Client:
 			request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
 			response = self.sendRtspRequest(request)
 			self.state = self.READY
-			self.currentFrameInstalledIndex = -1
+			# Reset Display, Install and Measure variables 
+			self.currentFrameInstalledIndex = 0
 			self.currentFrameDisplayedIndex = 0
+			self.timeStampPrev = 0
+			self.timeStampCur = 0
+			self.TotalFrame = 0																						
+			self.frameNbr = 0
+			self.frameCurrent = 0
+			self.frameLoss = 0
+			self.frame_buffer = []
+			self.videoDataRate = []
+
+			# Get Video Info
 			self.getMovieInfo()
 			return response
 	#TODO
@@ -195,27 +211,30 @@ class Client:
 	def forward5seconds(self):
 		request = RtspPacket(self.FORWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
-		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
+		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex
 
 	def backward5seconds(self):
 		request = RtspPacket(self.BACKWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
-		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
+		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex
 	
 	def exitClient(self):
 		"""Teardown button handler."""
-		request = RtspPacket(self.TEARDOWN, self.fileName, self.rtspSeq, self.rtpPort).generate()
-		response = self.sendRtspRequest(request)
-		print(response[0].split(' ')[1])
-		if int(response[0].split(' ')[1]) == 200:
-			print("Server close rtp socket")
-		else:
-			raise Exception("Teardown message not processed, dangling server rtp socket")
-		self.isRtpThreadStopped = True
-		self.isVideoThreadStopped = True
-		self.videoPlayerThread = None
-		self.rtpThread = None
-		self.state = self.INIT
+		if self.state != self.INIT:
+			request = RtspPacket(self.TEARDOWN, self.fileName, self.rtspSeq, self.rtpPort).generate()
+			response = self.sendRtspRequest(request)
+			print(response[0].split(' ')[1])
+			if int(response[0].split(' ')[1]) == 200:
+				print("Server closes RTP socket")
+			else:
+				raise Exception("Teardown message not processed, dangling server rtp socket")
+			self.isRtpThreadStopped = True
+			self.isVideoThreadStopped = True
+			self.videoPlayerThread = None
+			self.rtpThread = None
+			self.state = self.INIT
+			loss = (self.frameLoss)/(self.currentFrameInstalledIndex + self.frameLoss)
+			print(f"Packet Loss Rate = {loss}")
 		# self.handler()
 	#TODO																	 
 
@@ -290,10 +309,17 @@ class Client:
 				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
 				continue
 			frame = Image.open(BytesIO(frame_payload))
+			byte = sys.getsizeof(frame.tobytes())
 							
 			# print(f"Frame imported from rtp: {frame}")
 			self.currentFrameInstalledIndex += 1
 			self.frame_buffer.append(frame)	
+
+			if self.timeStampPrev != 0:
+				videoDataRate = byte * 1000 / (self.timeStampCur - self.timeStampPrev)
+				self.videoDataRate.append(videoDataRate)
+				print(f"Video Data Rate: {videoDataRate}")
+			self.timeStampPrev = self.timeStampCur
 	#TODO
 
 	def recvRTPPacket(self):
@@ -312,6 +338,7 @@ class Client:
 			# print(data.getPayload())
 			pass
 		self.frameCurrent = data.seqNum()
+		self.timeStampCur = int(time() * 1000)
 		print(f"Receive frame number: {self.frameNbr}/{self.frameCurrent}")
 		return data.getPayload()
 
@@ -345,9 +372,11 @@ class Client:
 				continue
 			try:
 				if self.frameNbr > self.videoTotalFrame:
+					print("Yay")
 					self.exitClient()
 				img = self.writeFrame(self.frame_buffer[self.currentFrameDisplayedIndex])
 				self.updateMovie(img)
+				
 				self.frameNbr += 1
 				if self.frameNbr == self.videoTotalFrame:
 					self.exitClient()
@@ -355,6 +384,7 @@ class Client:
 				
 			except IndexError as e:
 				print(f"Packet Loss Occured at Frame {self.frameNbr}")
+				self.frameLoss += 1
 				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
 				continue
 			self.currentFrameDisplayedIndex += 1
@@ -427,5 +457,5 @@ class Client:
 
 	def getVideoRemainTime(self):
 		#TODO: Show remain time into UI:
-		return (self.videoTotalFrame - self.currentFrameDisplayedIndex) * self.videoDuration / self.videoTotalFrame
+		return (self.videoTotalFrame - self.frameNbr) * self.videoDuration / self.videoTotalFrame
 		
