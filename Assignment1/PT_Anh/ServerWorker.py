@@ -11,6 +11,7 @@ class ServerWorker:
 	PLAY = 'PLAY'
 	PAUSE = 'PAUSE'
 	TEARDOWN = 'TEARDOWN'
+	RESET = 'RESET'
 
 	INIT = 0
 	READY = 1
@@ -74,6 +75,14 @@ class ServerWorker:
 				
 				# Get the RTP/UDP port from the last line
 				self.clientInfo['rtpPort'] = request[2].split(' ')[3]
+			elif self.state == self.READY:
+				# Update state
+				print("processing RESET\n")
+				self.clientInfo['videoStream'].Reset()
+
+				# Create a new socket for RTP/UDP
+				self.replyRtsp(self.OK_200, seq[1])
+				
 		
 		# Process PLAY request
 		elif requestType == self.PLAY:

@@ -54,6 +54,8 @@ class Client:
 		self.requestSent = -1																		
 		self.teardownAcked = 0																						
 		self.frameNbr = 0
+		self.frameCurrent = 0
+		self.frameLoss = 0
 		
 		self.rtspSocket = None
 		self.isRtpThreadStopped = False
@@ -132,18 +134,23 @@ class Client:
 	
 	def setupMovie(self):
 		"""Setup button handler. Starting RTP receiving thread"""
-		self.isRtpThreadStopped = False
-		self.isVideoThreadStopped = False
-		self.openRtpPort()
-		#Set up movie:
-		request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
-		response = self.sendRtspRequest(request)
-		self.state = self.READY
-		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex + 1
-		return response
+		if self.state == self.INIT:
+			self.isRtpThreadStopped = False
+			self.isVideoThreadStopped = False
+			self.openRtpPort()
+			#Set up movie:
+			request = RtspPacket(self.SETUP, self.fileName, self.rtspSeq, self.rtpPort).generate()
+			response = self.sendRtspRequest(request)
+			self.state = self.READY
+			self.currentFrameInstalledIndex = -1
+			self.currentFrameDisplayedIndex = 0
+			self.getMovieInfo()
+			return response
 	#TODO
 
-	def switchMovie(self):
+	def switchMovie(self):	
+		if self.state == self.INIT:
+			self.playMovie()		
 		if self.state != self.READY:
 			self.pauseMovie()
 		self.state = self.SWITCH
@@ -206,8 +213,6 @@ class Client:
 			raise Exception("Teardown message not processed, dangling server rtp socket")
 		self.isRtpThreadStopped = True
 		self.isVideoThreadStopped = True
-		self.videoPlayerThread.join()
-		self.rtpThread.join()
 		self.videoPlayerThread = None
 		self.rtpThread = None
 		self.state = self.INIT
@@ -224,9 +229,7 @@ class Client:
 		return response
 	#TODO
 
-	def describeMovie(self):
-		#TODO: Show response to UI, you may extract valuable information
-		#Get Movie information:
+	def getMovieInfo(self):
 		request = RtspPacket(self.DESCRIBE, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.videoFrameSize = response[1]
@@ -234,13 +237,24 @@ class Client:
 		self.videoTotalFrame = float(response[4])
 		self.videoEncode = response[3]
 		self.videoFps = float(response[5])
+		
+
+	def describeMovie(self):
+		#TODO: Show response to UI, you may extract valuable information
+		#Get Movie information:
+		print("Total Frame")
+		print(self.videoTotalFrame)
+		print("Total Duration")
+		print(self.videoDuration)
 		print("Time remaining")
 		print(self.getVideoRemainTime())
 		
 	
 	def playMovie(self):
 		"""Play button handler. Trigger server RTP socket sending frame"""
-		if self.state == self.PLAYING:
+		if self.state == self.INIT:
+			self.setupMovie()
+		if self.state != self.READY:
 			return
 		if not self.isReceivingRtp: # prevent multiple similar thread
 			self.rtpThread = threading.Thread(target=self.listenRtp, args=(lambda: self.isRtpThreadStopped,))
@@ -269,14 +283,14 @@ class Client:
 			try: 
 				frame_payload = self.recvRTPPacket()
 			except TimeoutError:
-				print("RTP Socket Timeout")
 				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
 				continue
 			except Exception:
 				print("Finish sending or RTP receive failed")
 				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
 				continue
-			frame = Image.open(BytesIO(frame_payload))							
+			frame = Image.open(BytesIO(frame_payload))
+							
 			# print(f"Frame imported from rtp: {frame}")
 			self.currentFrameInstalledIndex += 1
 			self.frame_buffer.append(frame)	
@@ -297,7 +311,8 @@ class Client:
 		if data.seqNum() == 1: # Print first frame of each Mjpeg file (for debugging purpose)
 			# print(data.getPayload())
 			pass
-		print(f"Receive frame number: {data.seqNum()}")
+		self.frameCurrent = data.seqNum()
+		print(f"Receive frame number: {self.frameNbr}/{self.frameCurrent}")
 		return data.getPayload()
 
 					
@@ -329,10 +344,17 @@ class Client:
 			if self.state != self.PLAYING:
 				continue
 			try:
+				if self.frameNbr > self.videoTotalFrame:
+					self.exitClient()
 				img = self.writeFrame(self.frame_buffer[self.currentFrameDisplayedIndex])
 				self.updateMovie(img)
+				self.frameNbr += 1
+				if self.frameNbr == self.videoTotalFrame:
+					self.exitClient()
+				print(f"Display frame number: {self.frameNbr}/{self.frameCurrent}")
+				
 			except IndexError as e:
-				print(f"Frame buffer of this index not yet downloaded")
+				print(f"Packet Loss Occured at Frame {self.frameNbr}")
 				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
 				continue
 			self.currentFrameDisplayedIndex += 1

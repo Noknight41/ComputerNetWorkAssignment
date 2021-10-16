@@ -16,9 +16,6 @@ class RtpPacket:
 		timestamp = int(time())
 		print ("timestamp: " + str(timestamp))
 		self.header = bytearray(HEADER_SIZE)
-		#--------------
-		# TO COMPLETE
-		#--------------
 		# Fill the header bytearray with RTP header fields
 
 		#RTP-version filed(V), must set to 2

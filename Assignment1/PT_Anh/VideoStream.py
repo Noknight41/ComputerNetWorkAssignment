@@ -26,6 +26,10 @@ class VideoStream:
 		"""Get frame number."""
 		return self.frameNum
 	
-	# def Reset(self):
-	# 	"""Reset the """
+	def Reset(self):
+		"""Reset the Movie"""
+		self.file.close()
+		self.file = open(self.filename, 'rb')
+		self.frameNum = 0
+
 

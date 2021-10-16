@@ -18,6 +18,7 @@ class Client:
 	PLAY = 1
 	PAUSE = 2
 	TEARDOWN = 3
+	RESET = 4
 
 	# Initiation..
 	def __init__(self, master, serveraddr, serverport, rtpport, filename):
@@ -39,6 +40,8 @@ class Client:
 		self.connectToServer()
 		self.VideoThread = None
 		self.playEnd = threading.Event()
+		self.notPausing = threading.Event()
+		self.finishReset = threading.Event()
 
 	def createWidgets(self):
 		"""Build GUI."""
@@ -74,6 +77,23 @@ class Client:
 		"""Setup button handler."""
 		if self.state == self.INIT:
 			self.sendRtspRequest(self.SETUP)
+		else:
+			if self.state == self.PLAYING:
+				thread = threading.Thread(target=self.pauseMovie)
+				thread.start()
+				thread.join()
+			while True:
+				if self.notPausing.isSet() == False:
+					self.finishReset.clear()
+					thread = threading.Thread(target=self.resetMovie)
+					thread.start()
+					thread.join()
+					while True:
+						if self.finishReset.isSet():
+							self.playMovie()
+							break
+					break
+			
 
 	def exitClient(self):
 		"""Teardown button handler."""
@@ -95,6 +115,10 @@ class Client:
 			self.sendRtspRequest(self.PLAY)
 			self.VideoThread = threading.Thread(target=self.listenRtp)
 			self.VideoThread.start()
+	
+	def resetMovie(self):
+		if self.state == self.READY:
+			self.sendRtspRequest(self.RESET)
 			
 	def listenRtp(self):
 		while True:
@@ -121,6 +145,7 @@ class Client:
 				print ("Data Missing!")
 				# Stop listening upon requesting PAUSE or TEARDOWN
 				if self.playEnd.isSet():
+					self.notPausing.clear()
 					break
 
 				# Upon receiving ACK for TEARDOWN request, close the RTP socket
@@ -200,7 +225,20 @@ class Client:
 			# Keep track of the sent request.
 			self.requestSent = self.PAUSE
 
-		# Resume request
+		# Reset request
+		elif requestCode == self.RESET and self.state == self.READY:
+			# Update RTSP sequence number.
+			self.frameNbr = 0
+			self.rtspSeq = self.rtspSeq + 1
+			request_line = [
+				f"RESET {self.fileName} {self.rtsp_version}", 
+				f"CSeq: {self.rtspSeq}", 
+				f"Session: {self.sessionId}"
+			]
+			request = '\n'.join(request_line) + '\n'
+			self.rtspSocket.send(request.encode('utf-8'))
+			# Keep track of the sent request.
+			self.requestSent = self.RESET
 
 		# Teardown request
 		elif requestCode == self.TEARDOWN and not self.state == self.INIT:
@@ -254,6 +292,11 @@ class Client:
 
 					elif self.requestSent == self.PLAY:
 						self.state = self.PLAYING
+						self.notPausing.set()
+					
+					elif self.requestSent == self.RESET:
+						self.finishReset.set()
+
 					elif self.requestSent == self.PAUSE:
 						self.state = self.READY
 						self.playEnd.set()
