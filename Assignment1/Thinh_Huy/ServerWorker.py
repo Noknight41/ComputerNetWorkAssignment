@@ -148,7 +148,7 @@ class ServerWorker:
 	def sendRtp(self):
 		"""Send RTP packets over UDP."""
 		while True:
-			self.clientInfo['event'].wait(self.DEFAULT_TIME_CLOCK/1000) 
+			self.clientInfo['event'].wait(self.DEFAULT_TIME_CLOCK * 2/1000) 
 
 			# Stop sending if request is PAUSE or TEARDOWN
 			# print("Thread is running")				 

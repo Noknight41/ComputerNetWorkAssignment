@@ -212,11 +212,13 @@ class Client:
 		request = RtspPacket(self.FORWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex
+		self.frameNbr = int(self.frameCurrent + (5 * self.videoTotalFrame)/ self.videoDuration)
 
 	def backward5seconds(self):
 		request = RtspPacket(self.BACKWARD5SECONDS, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
 		self.currentFrameDisplayedIndex = self.currentFrameInstalledIndex
+		self.frameNbr = int(self.frameCurrent - (5 * self.videoTotalFrame)/ self.videoDuration)
 	
 	def exitClient(self):
 		"""Teardown button handler."""
@@ -233,8 +235,9 @@ class Client:
 			self.videoPlayerThread = None
 			self.rtpThread = None
 			self.state = self.INIT
-			loss = (self.frameLoss)/(self.currentFrameInstalledIndex + self.frameLoss)
-			print(f"Packet Loss Rate = {loss}")
+			if self.currentFrameInstalledIndex + self.frameLoss != 0:
+				loss = (self.frameLoss)/(self.currentFrameInstalledIndex + self.frameLoss)
+				print(f"Packet Loss Rate = {loss}")
 		# self.handler()
 	#TODO																	 
 
