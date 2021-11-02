@@ -6,7 +6,7 @@ class Server:
 	
 	def main(self):
 		try:
-			SERVER_PORT = int(sys.argv[1])
+			SERVER_PORT = 8000
 		except:
 			print("[Usage: Server.py Server_port]\n")
 		rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
