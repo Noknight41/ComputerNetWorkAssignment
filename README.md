@@ -8,7 +8,7 @@ How to run:
 ```
   python Server.py 8000
 ```
- \tFor the second one, type
+ For the second one, type
  ```
   python ClientLauncher
  ```
