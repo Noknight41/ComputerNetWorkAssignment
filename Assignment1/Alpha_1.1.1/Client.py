@@ -137,25 +137,28 @@ class Client:
 	
 	def play_pause(self):
 		if (self.start['text'] == "Play ▶"):
-			self.playMovie()
 			self.start["text"] = "Pause ⏸"
 			self.start["background"] = "#FFCB6B"
+			self.playMovie()
 			self.setup["text"] = "Teardown ⏹"
 			self.setup["background"] = "#5c0c0c"
 		else:
-			self.pauseMovie()
 			self.start["text"] = "Play ▶"
 			self.start["background"] = '#8BE9FD'
+			self.pauseMovie()
 
 	def setup_teardown(self):
 		if (self.setup['text'] == "Setup ⏏️"):
-			self.setupMovie()
 			self.setup["text"] = "Teardown ⏹"
 			self.setup["background"] = "#5c0c0c"
+			self.setupMovie()
 		else:
-			self.exitClient()
 			self.setup["text"] = "Setup ⏏️"
 			self.setup["background"] = "#2D3B58"
+			self.exitClient()
+			self.start["state"] = DISABLED
+			sleep(1)
+			self.start["state"] = NORMAL
 			self.start["text"] = "Play ▶"
 			self.start["background"] = '#8BE9FD'
 
@@ -486,4 +489,3 @@ class Client:
 	def getVideoRemainTime(self):
 		#TODO: Show remain time into UI:
 		return (self.videoTotalFrame - self.frameNbr) * self.videoDuration / self.videoTotalFrame
-		
