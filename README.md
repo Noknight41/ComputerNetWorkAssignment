@@ -1,5 +1,19 @@
 # ComputerNetWorkAssignment
 
+## Alpha 1.1:
+How to run: \
+1. Open 2 separate tabs of terminal. \
+2. Change directory to the folder containing the code.
+3. For the first tab, type: 
+```
+  python Server.py 8000
+```
+  For the second one, type
+ ```
+  python ClientLauncher
+ ```
+5. Enjoy!
+
 ## PT_HA: 
 How to run: \
 python Server.py 5540 \
