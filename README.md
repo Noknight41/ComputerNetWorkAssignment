@@ -3,7 +3,7 @@
 ## Alpha 1.1 and higher:
 Following the instruction of Alpha 1.0, except when running Server:
 ```
-  python ClientLauncher
+  python Server.py
  ```
 However, if you strickly follow the Alpha 1.0, it still works!
 
@@ -17,7 +17,7 @@ How to run:
 ```
  For the second one, type
  ```
-  python ClientLauncher
+  python ClientLauncher.py
  ```
 5. Enjoy!
 
