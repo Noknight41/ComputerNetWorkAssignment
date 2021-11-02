@@ -5,7 +5,7 @@ Following the instruction of Alpha 1.0, except when running Server:
 ```
   python ClientLauncher
  ```
-However, if you strickly follow the Alpha 1.o, it still works!
+However, if you strickly follow the Alpha 1.0, it still works!
 
 ## Alpha 1.0:
 How to run: 
