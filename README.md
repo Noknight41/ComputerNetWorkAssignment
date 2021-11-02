@@ -6,7 +6,7 @@ How to run:
 2. Change directory to the folder containing the code.
 3. For the first tab, type: 
 ```
-  python Server.py 8000
+  python Server.py
 ```
  For the second one, type
  ```
