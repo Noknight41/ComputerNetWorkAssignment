@@ -489,3 +489,4 @@ class Client:
 	def getVideoRemainTime(self):
 		#TODO: Show remain time into UI:
 		return (self.videoTotalFrame - self.frameNbr) * self.videoDuration / self.videoTotalFrame
+		
