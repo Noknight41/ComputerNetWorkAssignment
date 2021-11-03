@@ -1,6 +1,6 @@
 # ComputerNetWorkAssignment
 
-## Alpha 1.1 and higher:
+## Alpha 1.1 versions:
 Following the instruction of Alpha 1.0, except when running Server:
 ```
   python Server.py
