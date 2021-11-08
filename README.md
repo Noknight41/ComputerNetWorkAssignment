@@ -1,5 +1,24 @@
 # ComputerNetWorkAssignment
 
+## Alpha 1.2:
+User now have more options to run the app:
+1. Default: Run like previous version
+2. Custom: User now can choose their server's port, their RTP port and the video which will be played!
+   On server's side:
+   ```
+   python Server.py <server port>
+   ```
+   On client's side:
+   ```
+   python ClientLauncher.py <server address> <server port> <RTP port> <Video name>
+   ```
+   Examples:
+    ```
+    python Server.py 5000
+    python ClientLauncher.py localhost 5000 3000 video.Mjpeg
+    ```
+
+User can also run Server with custom mode and ClientLauncher with default mode. It also works!
 ## Alpha 1.1 versions:
 Following the instruction of Alpha 1.0, except when running Server:
 ```
