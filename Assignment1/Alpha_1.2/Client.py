@@ -188,13 +188,15 @@ class Client:
 			# Get Video Info
 			self.getMovieInfo()
 			return response
-	#TODO
+	
 
 	def switchMovie(self):	
 		if self.state == self.INIT:
 			self.playMovie()		
 		if self.state != self.READY:
 			self.pauseMovie()
+			self.start["text"] = "Play ▶"
+			self.start["background"] = '#8BE9FD'
 		self.state = self.SWITCH
 		request = RtspPacket(self.SWITCH, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		# To be implemented: server reponse with dictionary containing array of string for each filename 
@@ -220,10 +222,11 @@ class Client:
 		top = Toplevel(self.master)
 		# top.protocol("WM_DELETE_WINDOW", top.destroy)
 		top.title("Choose filename")
+		top.resizable(300, 300)
 		newFilenameRadioValue = StringVar()
 		for filename in filenameList:
 			Radiobutton(top, text=filename, value=filename, variable=newFilenameRadioValue, command=newFilenameRadioValue.get()).pack(anchor=W)
-		saveButton = Button(top, text="Click to choose this filename", command=lambda: self.saveNewFilenameAndDestroy(newFilenameRadioValue.get(),top))
+		saveButton = Button(top, text="Click to choose this filename", command=lambda: self.saveNewFilenameAndDestroy(newFilenameRadioValue.get(),top), width=50)
 		saveButton.pack()
 		top.wait_window()
 		#After destroy mainloop of child TK() objects
@@ -267,7 +270,7 @@ class Client:
 				loss = (self.frameLoss)/(self.currentFrameInstalledIndex + self.frameLoss)
 				print(f"Packet Loss Rate = {loss}")
 		# self.handler()
-	#TODO																	 
+																		 
 
 	def pauseMovie(self):
 		"""Pause button handler."""
@@ -277,7 +280,7 @@ class Client:
 		response = self.sendRtspRequest(request)
 		self.state = self.READY
 		return response
-	#TODO
+	
 
 	def getMovieInfo(self):
 		request = RtspPacket(self.DESCRIBE, self.fileName, self.rtspSeq, self.rtpPort).generate()
@@ -290,7 +293,6 @@ class Client:
 		
 
 	def describeMovie(self):
-		#TODO: Show response to UI, you may extract valuable information
 		#Get Movie information:
 		request = RtspPacket(self.DESCRIBE, self.fileName, self.rtspSeq, self.rtpPort).generate()
 		response = self.sendRtspRequest(request)
@@ -318,7 +320,7 @@ class Client:
 		response = self.sendRtspRequest(request)
 		self.state = self.PLAYING
 		return response
-	#TODO
+	
 	
 	def listenRtp(self, stop):		
 		"""Listen for RTP packets."""
@@ -349,12 +351,12 @@ class Client:
 			self.currentFrameInstalledIndex += 1
 			self.frame_buffer.append(frame)	
 
-			if self.timeStampPrev != 0:
+			if self.timeStampPrev != 0 and self.timeStampCur != self.timeStampPrev:
 				videoDataRate = byte * 1000 / (self.timeStampCur - self.timeStampPrev)
 				self.videoDataRate.append(videoDataRate)
 				print(f"Video Data Rate: {videoDataRate}")
 			self.timeStampPrev = self.timeStampCur
-	#TODO
+	
 
 	def recvRTPPacket(self):
 		bytedata = bytes()
@@ -383,7 +385,7 @@ class Client:
 		data.save(b, format="jpeg")
 		# print(data)
 		return data
-	#TODO
+	
 
 	def updateMovie(self, imageFile):
 		"""Update the image file as video frame in the GUI."""
@@ -392,7 +394,7 @@ class Client:
 		self.label.config(image=imgTk, width=imgTk.width(), height=imgTk.height())
 		self.label.image=imgTk
 		# print(self.label.image)
-	#TODO
+	
 	
 	def runMovie(self, stop):
 		"""Update the image file as video frame in the GUI."""
@@ -427,7 +429,7 @@ class Client:
 				sleep(self.DEFAULT_TIME_CLOCK*10/1000)
 				continue
 			self.currentFrameDisplayedIndex += 1
-	#TODO
+	
 		
 	def connectToServer(self):
 		"""Connect to the Server. Start a new RTSP/TCP session."""
@@ -448,7 +450,7 @@ class Client:
 		self.rtspSocket.sendall(requestCode)
 		self.rtspSeq += 1
 		return self.recvRtspReply()
-	#TODO
+	
 	
 	def recvRtspReply(self):
 		"""Receive RTSP reply from the server."""
@@ -464,7 +466,7 @@ class Client:
 		if self.sessionId == 0:
 			self.sessionId = int((response[2].split(' '))[1])
 		return response
-	#TODO
+	
 		
 	def parseRtspReply(self, data):
 		"""Parse the RTSP reply from the server."""
@@ -473,7 +475,7 @@ class Client:
 		if response_header[1] != '200':
 			raise Exception(f"Error message: {repr(response)}")
 		return response
-	#TODO
+	
 	
 	def openRtpPort(self):
 		"""Open RTP socket binded to a specified port."""
@@ -511,9 +513,8 @@ class Client:
 				self.start["text"] = "Play ▶"
 				self.start["background"] = '#8BE9FD'
 
-	#TODO
+	
 
 	def getVideoRemainTime(self):
-		#TODO: Show remain time into UI:
 		return (self.videoTotalFrame - self.frameNbr) * self.videoDuration / self.videoTotalFrame
 		
